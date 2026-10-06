@@ -1,0 +1,109 @@
+*{
+    box-sizing: border-box;    
+}
+.container-fluid{
+    display:flex;
+    width: 100%;
+    box-sizing: border-box;
+    background-color: lightblue;
+}
+.header h3{
+    text-align: center;
+    padding: 10px;
+    margin-bottom: 30px;
+    background-color: lightblue;
+    height: 68px;
+    font-size: 75px;
+    font-weight: bold;
+        
+}
+.headline{
+    height: 40px;
+}
+
+.headerline h3 {    
+    font-size: 18px;
+    color: whitesmoke;
+    height: 70px;
+    padding-top: 20px;
+    text-align: center;
+    background-color: black;
+    height: 70px;
+}
+.form-grid {
+    display:grid;
+    gap: 1rem;
+    border: 2px solid steelblue;
+    background-color: rgb(163, 190, 197);
+    border-radius: 0.5em;
+    box-shadow: 0.5rem 1rem 1rem;
+    margin: 30px 20px;
+    padding: 20px 25px;
+    width: 30%;
+}
+
+.aside-grid {
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(2,1fr);
+    border: 2px solid steelblue;
+    background-color: rgb(55, 211, 203);
+    border-radius: 0.5rem;
+    box-shadow: 0.5rem 1rem 1rem;
+    margin: 30px 20px 30px 0 ;    
+    padding: 20px 25px;
+    width: 70%;    
+}
+.aside{     
+    height: 100px;
+    background-color: cornsilk;
+    border-radius: 0.2rem;
+    border: 2px solid steelblue;
+    margin: 10px;
+}
+.aside h1 {
+    margin-bottom: 50px; 
+    text-align: center;
+    justify-items: center; 
+    font-size: 28px;
+    margin-bottom: 30px;
+}
+.aside h4 {
+    margin-top: 10px;
+    font-size: 14px;
+    text-align: center;
+    justify-items: center;
+}
+.footer h4 {
+    text-align: center;
+    justify-items: center;
+    color: aliceblue;
+    margin-top: 40px;
+    margin-bottom: 0px;
+    padding: 15px;
+    background-color: rgb(0, 0, 0);
+}
+.copyright {
+    font-size: xx-small;
+    text-align: center;
+}
+.navbar {
+    width: 40%;
+    left: 30%;
+}
+
+.navbar a button {
+    width: 130px;
+    margin: 0px;
+}
+
+.navbar2 {
+    width: 100%;
+    left: 20px;
+    margin: 50px 70px 10px 70px;
+}
+
+.navbar2 a button {
+    width: 300px;
+    margin-right: 5px;
+}
