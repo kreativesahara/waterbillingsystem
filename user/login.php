@@ -25,6 +25,9 @@ if (isset($_SESSION['waterbillingsystem'])) {
     <div class="header">
         <h3>Tenant</h3>
     </div>
+    <div style="text-align: center; margin: 15px 0;">
+        <a href="../home.php" style="text-decoration: none; font-weight: 600; color: #0d6efd;">&larr; Back to Portal Selection</a>
+    </div>
     <div class="container-fluid">
         <form action="login.php" method="POST">
             <div class="form-grid" id="form-register">
