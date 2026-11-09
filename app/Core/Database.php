@@ -303,6 +303,9 @@ class Database
                 VALUES (2, '2026-10', '2026-10-28', 85, 98, 13, 1)");
             $pdo->exec("INSERT INTO invoices (invoice_number, house_id, consumer_id, billing_month, date_of_reading, previous_reading, current_reading, units_consumed, cost_per_unit, water_cost, meter_rent, bbd, total_bill, amount_paid, status, due_date)
                 VALUES ('INV-202610-H02', 2, 3, '2026-10', '2026-10-28', 85, 98, 13, 150.00, 1950.00, 50.00, 0.00, 2000.00, 2000.00, 'PAID', '2026-11-07')");
+            $h2Receipt = 'QRT' . strtoupper(substr(md5('INV-202610-H02'), 0, 7));
+            $pdo->exec("INSERT INTO payments (invoice_id, consumer_id, amount, payment_method, mpesa_receipt, phone_number, status)
+                VALUES (4, 3, 2000.00, 'MPESA_STK', '$h2Receipt', '0722334455', 'COMPLETED')");
 
             $pdo->exec("INSERT INTO meter_readings (house_id, billing_month, date_of_reading, previous_reading, current_reading, units_consumed, recorded_by)
                 VALUES (3, '2026-10', '2026-10-28', 140, 158, 18, 1)");

@@ -67,6 +67,16 @@
                             KSh <?= number_format($arrears, 2) ?>
                         </span>
                     </div>
+
+                    <?php if ($isOccupied): ?>
+                        <div class="pt-3">
+                            <a href="/tenant/payments?tenant_id=<?= (int)$u['consumer_id'] ?>"
+                                class="w-full inline-flex items-center justify-center space-x-1.5 py-2 px-3 rounded-xl bg-slate-100 hover:bg-sky-50 text-slate-700 hover:text-sky-700 border border-slate-200/80 hover:border-sky-200 font-semibold text-xs transition">
+                                <i data-lucide="activity" class="w-3.5 h-3.5 text-sky-600"></i>
+                                <span>Payment &amp; Activity Log</span>
+                            </a>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         <?php endforeach; ?>

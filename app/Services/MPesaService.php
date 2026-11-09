@@ -59,6 +59,22 @@ class MPesaService
                 [$newPaid, $newStatus, $invoiceId]
             );
 
+            // Log a payment confirmation entry in notifications for the tenant's activity log
+            $balanceRemaining = max(0.0, (float)$invoice['total_bill'] - $newPaid);
+            $notifMsg = sprintf(
+                "M-Pesa Payment Confirmed (Ref: %s). KSh %s received for Invoice %s (%s). Remaining balance: KSh %s.",
+                $receipt,
+                number_format($amount, 2),
+                $invoice['invoice_number'],
+                $invoice['billing_month'],
+                number_format($balanceRemaining, 2)
+            );
+            Database::query(
+                "INSERT INTO notifications (consumer_id, phone_number, message, type, status)
+                 VALUES (?, ?, ?, 'PAYMENT_RECEIPT', 'SENT')",
+                [$invoice['consumer_id'], $phoneNumber, $notifMsg]
+            );
+
             Database::commit();
 
             return [

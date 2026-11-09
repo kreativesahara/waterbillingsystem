@@ -71,15 +71,20 @@ $router->get('/admin/meter-entry', [AdminController::class, 'meterEntry'], ['adm
 $router->get('/admin/records', [AdminController::class, 'records'], ['admin']);
 $router->get('/admin/tenants', [AdminController::class, 'tenants'], ['admin']);
 
-// Tenant Portal Routes (Guarded by tenant middleware)
+// Tenant Portal Routes (Guarded by tenant/auth middleware)
 $router->get('/tenant/dashboard', [TenantController::class, 'dashboard'], ['tenant']);
-$router->get('/tenant/statement', [TenantController::class, 'statement'], ['tenant']);
+$router->get('/tenant/payments', [TenantController::class, 'payments'], ['auth']);
+$router->get('/tenant/activity', [TenantController::class, 'payments'], ['auth']);
+$router->get('/tenant/statement', [TenantController::class, 'statement'], ['auth']);
 
 // REST API Endpoints
 $router->get('/api/calculate', [ApiController::class, 'calculate']);
 $router->post('/api/meter-reading', [ApiController::class, 'recordReading']);
 $router->post('/api/pay/stk-push', [ApiController::class, 'stkPush']);
 $router->post('/api/send-sms', [ApiController::class, 'sendSms']);
+$router->get('/api/invoice-share-details', [ApiController::class, 'getInvoiceShareDetails']);
+$router->get('/api/building-summary', [ApiController::class, 'getBuildingSummary']);
+$router->post('/api/bulk-sms', [ApiController::class, 'bulkSms']);
 
 // Dispatch request
 $router->dispatch();

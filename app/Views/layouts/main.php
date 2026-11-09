@@ -105,10 +105,14 @@ $active = $activeNav ?? 'dashboard';
             <!-- Secondary Subnav for Tenant -->
             <?php if ($isTenant): ?>
             <div class="bg-slate-800/95 border-t border-slate-700/60 px-4 sm:px-6 lg:px-8">
-                <div class="max-w-7xl mx-auto flex space-x-6 py-2">
+                <div class="max-w-7xl mx-auto flex space-x-2 sm:space-x-6 overflow-x-auto py-2">
                     <a href="/tenant/dashboard" class="<?= $active === 'tenant_dashboard' ? 'text-sky-400 bg-slate-700/60 font-semibold' : 'text-slate-300 hover:text-white hover:bg-slate-700/40' ?> px-3 py-1.5 rounded-lg text-sm flex items-center space-x-2 transition">
                         <i data-lucide="home" class="w-4 h-4"></i>
                         <span>My Water Bill</span>
+                    </a>
+                    <a href="/tenant/payments" class="<?= $active === 'tenant_payments' ? 'text-sky-400 bg-slate-700/60 font-semibold' : 'text-slate-300 hover:text-white hover:bg-slate-700/40' ?> px-3 py-1.5 rounded-lg text-sm flex items-center space-x-2 transition">
+                        <i data-lucide="activity" class="w-4 h-4"></i>
+                        <span>Payments &amp; Activity Log</span>
                     </a>
                     <a href="/tenant/statement" class="<?= $active === 'tenant_statement' ? 'text-sky-400 bg-slate-700/60 font-semibold' : 'text-slate-300 hover:text-white hover:bg-slate-700/40' ?> px-3 py-1.5 rounded-lg text-sm flex items-center space-x-2 transition">
                         <i data-lucide="file-text" class="w-4 h-4"></i>

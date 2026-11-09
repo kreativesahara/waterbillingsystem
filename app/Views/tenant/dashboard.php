@@ -9,10 +9,16 @@
                 Hello, <?= htmlspecialchars($user['firstname']) ?>! 👋
             </h1>
         </div>
-        <a href="/tenant/statement" class="inline-flex items-center space-x-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 px-3 py-2 rounded-xl shadow-sm transition">
-            <i data-lucide="file-text" class="w-4 h-4 text-sky-600"></i>
-            <span>Statement</span>
-        </a>
+        <div class="flex items-center space-x-2">
+            <a href="/tenant/payments" class="inline-flex items-center space-x-1.5 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 px-3 py-2 rounded-xl shadow-sm transition">
+                <i data-lucide="activity" class="w-4 h-4 text-sky-600"></i>
+                <span>Activity Log</span>
+            </a>
+            <a href="/tenant/statement" class="inline-flex items-center space-x-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 px-3 py-2 rounded-xl shadow-sm transition">
+                <i data-lucide="file-text" class="w-4 h-4 text-sky-600"></i>
+                <span>Statement</span>
+            </a>
+        </div>
     </div>
 
     <!-- Hero Card: Active Outstanding Bill -->
@@ -171,10 +177,16 @@
 
     <!-- Recent Payments & Receipts -->
     <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm">
-        <h3 class="text-base font-bold text-slate-900 mb-4 flex items-center space-x-2">
-            <i data-lucide="receipt" class="w-4 h-4 text-emerald-600"></i>
-            <span>Recent Payment Receipts</span>
-        </h3>
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                <i data-lucide="receipt" class="w-4 h-4 text-emerald-600"></i>
+                <span>Recent Payment Receipts</span>
+            </h3>
+            <a href="/tenant/payments" class="text-xs font-semibold text-sky-600 hover:text-sky-800 inline-flex items-center space-x-1">
+                <span>Full Activity Log</span>
+                <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+        </div>
 
         <?php if (empty($payments)): ?>
             <p class="text-xs text-slate-400 py-3 text-center">No payment transactions recorded yet.</p>

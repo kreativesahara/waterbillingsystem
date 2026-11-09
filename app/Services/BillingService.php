@@ -171,6 +171,131 @@ class BillingService
     }
 
     /**
+     * Format a clean, professional billing message for WhatsApp, SMS, or Clipboard
+     */
+    public function formatInvoiceMessage(array $inv): string
+    {
+        $waterCost = number_format((float)$inv['water_cost'], 2);
+        $meterRent = number_format((float)$inv['meter_rent'], 2);
+        $bbd = number_format((float)$inv['bbd'], 2);
+        $total = number_format((float)$inv['total_bill'], 2);
+        $units = number_format((float)$inv['units_consumed'], 1);
+
+        $msg = "💧 *CLASSIC HEIGHTS APARTMENTS - WATER BILL* 💧\n";
+        $msg .= "Dear {$inv['firstname']},\n";
+        $msg .= "Your water bill for *House {$inv['house_number']}* ({$inv['billing_month']}) is *KSh {$total}*.\n\n";
+        $msg .= "📋 *Breakdown:*\n";
+        $msg .= "• Prev Dial: {$inv['previous_reading']} m³\n";
+        $msg .= "• Curr Dial: {$inv['current_reading']} m³\n";
+        $msg .= "• Units Consumed: {$units} m³ (KSh {$waterCost})\n";
+        $msg .= "• Meter Rent: KSh {$meterRent}\n";
+        if ((float)$inv['bbd'] > 0) {
+            $msg .= "• Previous Arrears: KSh {$bbd}\n";
+        }
+        $msg .= "• *Total Payable: KSh {$total}*\n\n";
+        $msg .= "📅 *Due Date:* {$inv['due_date']}\n";
+        $msg .= "📲 *M-Pesa Payment Details:*\n";
+        $msg .= "• Paybill: *174379*\n";
+        $msg .= "• Account: *H{$inv['house_number']}*\n\n";
+        $msg .= "Thank you for being a valued resident!";
+
+        return $msg;
+    }
+
+    /**
+     * Generate building-wide summary and message for noticeboard / WhatsApp group
+     */
+    public function generateBuildingSummary(?string $month = null): array
+    {
+        if (empty($month)) {
+            // Find latest billing month
+            $latest = Database::fetchOne("SELECT billing_month FROM invoices ORDER BY billing_month DESC LIMIT 1");
+            $month = $latest ? $latest['billing_month'] : date('Y-m');
+        }
+
+        $invoices = Database::fetchAll(
+            "SELECT i.*, h.house_number, c.firstname, c.lastname, c.phonenumber
+             FROM invoices i
+             JOIN houses h ON i.house_id = h.id
+             JOIN consumers c ON i.consumer_id = c.id
+             WHERE i.billing_month = ?
+             ORDER BY CAST(h.house_number AS UNSIGNED) ASC",
+            [$month]
+        );
+
+        $totalBilled = 0.0;
+        $totalCollected = 0.0;
+        $totalUnits = 0.0;
+        $pendingCount = 0;
+        $paidCount = 0;
+
+        $linesAll = [];
+        $linesPending = [];
+        $pendingInvoices = [];
+
+        foreach ($invoices as $inv) {
+            $bill = (float)$inv['total_bill'];
+            $paid = (float)$inv['amount_paid'];
+            $units = (float)$inv['units_consumed'];
+            $status = $inv['status'];
+
+            $totalBilled += $bill;
+            $totalCollected += $paid;
+            $totalUnits += $units;
+
+            $statusIcon = ($status === 'PAID') ? '✅ Paid' : '⏳ Pending';
+            if ($status === 'PAID') {
+                $paidCount++;
+            } else {
+                $pendingCount++;
+                $pendingInvoices[] = $inv;
+                $linesPending[] = "• *House {$inv['house_number']}* ({$inv['firstname']} {$inv['lastname']}): *KSh " . number_format($bill, 2) . "* ({$units} m³)";
+            }
+
+            $linesAll[] = "• *House {$inv['house_number']}* ({$inv['firstname']}): KSh " . number_format($bill, 2) . " ({$units} m³) [{$statusIcon}]";
+        }
+
+        $unpaidBalance = max(0.0, $totalBilled - $totalCollected);
+
+        // Build WhatsApp Broadcast text for all units
+        $buildingMsg = "🏢 *CLASSIC HEIGHTS APARTMENTS*\n";
+        $buildingMsg .= "💧 *MONTHLY WATER BILLING SCHEDULE - {$month}* 💧\n\n";
+        $buildingMsg .= "Dear Residents, please find below the water billing schedule for {$month}:\n\n";
+        $buildingMsg .= implode("\n", $linesAll) . "\n\n";
+        $buildingMsg .= "📊 *Summary:*\n";
+        $buildingMsg .= "• Total Billed: KSh " . number_format($totalBilled, 2) . "\n";
+        $buildingMsg .= "• Total Water Volume: " . number_format($totalUnits, 1) . " m³\n";
+        $buildingMsg .= "• Paid Units: {$paidCount} | Pending Units: {$pendingCount}\n\n";
+        $buildingMsg .= "📲 *Payment Details:*\n";
+        $buildingMsg .= "• M-Pesa Paybill: *174379*\n";
+        $buildingMsg .= "• Account: *H[HouseNumber]* (e.g. H1)\n\n";
+        $buildingMsg .= "Please clear pending balances by the due date. Thank you!";
+
+        // Build reminder text for only pending units
+        $reminderMsg = "⚠️ *CLASSIC HEIGHTS - WATER BILL PAYMENT REMINDER ({$month})*\n\n";
+        $reminderMsg .= "Dear Residents, a reminder for outstanding water bills:\n\n";
+        $reminderMsg .= implode("\n", $linesPending) . "\n\n";
+        $reminderMsg .= "Total Outstanding: *KSh " . number_format($unpaidBalance, 2) . "*\n";
+        $reminderMsg .= "Paybill: *174379*, Account: *H[HouseNumber]*\n";
+        $reminderMsg .= "Thank you for your cooperation!";
+
+        return [
+            'month' => $month,
+            'invoices' => $invoices,
+            'pending_invoices' => $pendingInvoices,
+            'total_billed' => $totalBilled,
+            'total_collected' => $totalCollected,
+            'unpaid_balance' => $unpaidBalance,
+            'total_units' => $totalUnits,
+            'total_count' => count($invoices),
+            'paid_count' => $paidCount,
+            'pending_count' => $pendingCount,
+            'building_message' => $buildingMsg,
+            'reminder_message' => $reminderMsg,
+        ];
+    }
+
+    /**
      * Retrieve executive KPI summary for admin dashboard
      */
     public function getExecutiveMetrics(): array

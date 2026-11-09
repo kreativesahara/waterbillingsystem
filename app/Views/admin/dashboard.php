@@ -6,6 +6,10 @@
             <p class="text-sm text-slate-500">Overview of billing performance, collection rates, and water consumption for <?= date('F Y') ?>.</p>
         </div>
         <div class="flex items-center space-x-3">
+            <button type="button" onclick="openBuildingBroadcastModal('<?= $metrics['current_month'] ?>')" class="inline-flex items-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-md shadow-emerald-600/20 transition">
+                <i data-lucide="megaphone" class="w-4 h-4"></i>
+                <span>Building Broadcast</span>
+            </button>
             <a href="/admin/meter-entry" class="inline-flex items-center space-x-2 bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-700 hover:to-cyan-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-md shadow-sky-500/20 transition">
                 <i data-lucide="gauge" class="w-4 h-4"></i>
                 <span>Record Meter Reading</span>
@@ -170,10 +174,10 @@
                                     <?php endif; ?>
                                 </td>
                                 <td class="px-5 py-3.5 text-center">
-                                    <button onclick="dispatchSms(<?= $inv['id'] ?>, '<?= htmlspecialchars($inv['firstname']) ?>')"
-                                        class="inline-flex items-center space-x-1 text-xs font-semibold text-sky-600 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 px-2.5 py-1 rounded-lg transition">
-                                        <i data-lucide="send" class="w-3 h-3"></i>
-                                        <span>SMS Bill</span>
+                                    <button onclick="openShareModal(<?= $inv['id'] ?>)" title="Quick Actions: WhatsApp, SMS, Copy"
+                                        class="inline-flex items-center space-x-1.5 text-xs font-semibold text-sky-700 hover:text-sky-900 bg-sky-50 hover:bg-sky-100 border border-sky-200/80 px-3 py-1.5 rounded-xl transition shadow-xs">
+                                        <i data-lucide="share-2" class="w-3.5 h-3.5 text-sky-600"></i>
+                                        <span>Share Bill</span>
                                     </button>
                                 </td>
                             </tr>
@@ -185,44 +189,4 @@
     </div>
 </div>
 
-<script>
-    function dispatchSms(invoiceId, tenantName) {
-        Swal.fire({
-            title: 'Dispatch Bill SMS',
-            text: `Send official M-Pesa bill notification SMS to ${tenantName}?`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, Send SMS',
-            cancelButtonText: 'Cancel',
-            confirmButtonColor: '#0284c7',
-        }).then((result) => {
-            if (result.isConfirmed) {
-                fetch('/api/send-sms', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({invoice_id: invoiceId})
-                })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'SMS Sent Successfully!',
-                            text: data.message,
-                            confirmButtonColor: '#0284c7'
-                        });
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Failed to Send SMS',
-                            text: data.error || 'Unknown error',
-                        });
-                    }
-                })
-                .catch(err => {
-                    Swal.fire({icon: 'error', title: 'Network Error', text: err.message});
-                });
-            }
-        });
-    }
-</script>
+<?php include __DIR__ . '/partials/share_modals.php'; ?>

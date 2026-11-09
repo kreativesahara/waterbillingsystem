@@ -108,4 +108,117 @@ class ApiController
             Response::json(['error' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * Get sharing details & pre-formatted text for a single invoice
+     * GET /api/invoice-share-details?id=123
+     */
+    public function getInvoiceShareDetails(): void
+    {
+        Auth::requireAdmin();
+
+        $invoiceId = (int)($_GET['id'] ?? 0);
+        if ($invoiceId <= 0) {
+            Response::json(['error' => 'Invalid invoice id'], 400);
+        }
+
+        $inv = \App\Core\Database::fetchOne(
+            "SELECT i.*, h.house_number, h.meter_number, c.firstname, c.lastname, c.phonenumber
+             FROM invoices i
+             JOIN houses h ON i.house_id = h.id
+             JOIN consumers c ON i.consumer_id = c.id
+             WHERE i.id = ?",
+            [$invoiceId]
+        );
+
+        if (!$inv) {
+            Response::json(['error' => 'Invoice not found'], 404);
+        }
+
+        $formattedMsg = $this->billingService->formatInvoiceMessage($inv);
+
+        // Normalize Kenyan phone number for WhatsApp E.164: 07XXXXXXXX -> 2547XXXXXXXX
+        $rawPhone = preg_replace('/[^0-9]/', '', $inv['phonenumber']);
+        if (str_starts_with($rawPhone, '0')) {
+            $intPhone = '254' . substr($rawPhone, 1);
+        } elseif (str_starts_with($rawPhone, '254')) {
+            $intPhone = $rawPhone;
+        } else {
+            $intPhone = '254' . $rawPhone;
+        }
+
+        $whatsappUrl = 'https://wa.me/' . $intPhone . '?text=' . rawurlencode($formattedMsg);
+        $smsUrl = 'sms:' . $inv['phonenumber'] . '?body=' . rawurlencode($formattedMsg);
+
+        Response::json([
+            'success' => true,
+            'invoice' => $inv,
+            'message' => $formattedMsg,
+            'int_phone' => $intPhone,
+            'whatsapp_url' => $whatsappUrl,
+            'sms_url' => $smsUrl,
+        ]);
+    }
+
+    /**
+     * Get building-wide schedule and WhatsApp broadcast message
+     * GET /api/building-summary?month=2026-10
+     */
+    public function getBuildingSummary(): void
+    {
+        Auth::requireAdmin();
+
+        $month = $_GET['month'] ?? null;
+        $summary = $this->billingService->generateBuildingSummary($month);
+
+        $whatsappBroadcastUrl = 'https://wa.me/?text=' . rawurlencode($summary['building_message']);
+        $whatsappReminderUrl = 'https://wa.me/?text=' . rawurlencode($summary['reminder_message']);
+
+        $summary['whatsapp_broadcast_url'] = $whatsappBroadcastUrl;
+        $summary['whatsapp_reminder_url'] = $whatsappReminderUrl;
+
+        Response::json([
+            'success' => true,
+            'data' => $summary,
+        ]);
+    }
+
+    /**
+     * Dispatch bulk SMS to all pending tenants in a billing month
+     * POST /api/bulk-sms
+     */
+    public function bulkSms(): void
+    {
+        Auth::requireAdmin();
+
+        $data = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+        $month = $data['month'] ?? null;
+
+        $summary = $this->billingService->generateBuildingSummary($month);
+        $pending = $summary['pending_invoices'];
+
+        if (empty($pending)) {
+            Response::json(['success' => true, 'count' => 0, 'message' => 'No pending invoices found for this month. All bills are settled!']);
+        }
+
+        $sentCount = 0;
+        $recipients = [];
+
+        foreach ($pending as $inv) {
+            try {
+                $this->smsService->sendBillNotification((int)$inv['id']);
+                $sentCount++;
+                $recipients[] = "House {$inv['house_number']} ({$inv['firstname']})";
+            } catch (\Exception $e) {
+                // Continue with next
+            }
+        }
+
+        Response::json([
+            'success' => true,
+            'count' => $sentCount,
+            'recipients' => $recipients,
+            'message' => "Successfully dispatched SMS bill reminders to {$sentCount} pending tenant(s).",
+        ]);
+    }
 }

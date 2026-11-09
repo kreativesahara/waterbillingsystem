@@ -6,6 +6,10 @@
             <p class="text-sm text-slate-500">Historical billing ledger, payment statuses, and print registers.</p>
         </div>
         <div class="flex items-center space-x-2">
+            <button type="button" onclick="openBuildingBroadcastModal('<?= htmlspecialchars($filterMonth) ?>')" class="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-sm font-semibold shadow-sm shadow-emerald-600/20 transition">
+                <i data-lucide="megaphone" class="w-4 h-4"></i>
+                <span>Building Broadcast</span>
+            </button>
             <button onclick="window.print()" class="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold shadow-sm transition">
                 <i data-lucide="printer" class="w-4 h-4 text-slate-500"></i>
                 <span>Print Register</span>
@@ -162,9 +166,9 @@
                                 </td>
                                 <td class="px-4 py-3 text-center no-print">
                                     <div class="flex items-center justify-center space-x-1.5">
-                                        <button onclick="dispatchSms(<?= $r['id'] ?>, '<?= htmlspecialchars($r['firstname']) ?>')" title="Dispatch SMS Alert"
-                                            class="p-1.5 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition">
-                                            <i data-lucide="send" class="w-4 h-4"></i>
+                                        <button onclick="openShareModal(<?= $r['id'] ?>)" title="Quick Actions: WhatsApp, SMS, Copy"
+                                            class="p-1.5 text-slate-500 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition">
+                                            <i data-lucide="share-2" class="w-4 h-4"></i>
                                         </button>
                                         <a href="/tenant/statement?id=<?= $r['id'] ?>" target="_blank" title="View Statement"
                                             class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition">
@@ -181,34 +185,9 @@
     </div>
 </div>
 
-<script>
-    function dispatchSms(invoiceId, tenantName) {
-        Swal.fire({
-            title: 'Dispatch Bill SMS',
-            text: `Send official M-Pesa bill notification SMS to ${tenantName}?`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, Send SMS',
-            confirmButtonColor: '#0284c7',
-        }).then((result) => {
-            if (result.isConfirmed) {
-                fetch('/api/send-sms', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({invoice_id: invoiceId})
-                })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire({icon: 'success', title: 'SMS Dispatched!', text: data.message});
-                    } else {
-                        Swal.fire({icon: 'error', title: 'Failed', text: data.error});
-                    }
-                });
-            }
-        });
-    }
+<?php include __DIR__ . '/partials/share_modals.php'; ?>
 
+<script>
     function exportTableToCSV(filename) {
         let csv = [];
         const rows = document.querySelectorAll("#recordsTable tr");
