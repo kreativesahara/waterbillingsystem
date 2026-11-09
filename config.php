@@ -10,6 +10,11 @@ $db_user = 'root';
 $db_pass = '';
 $db_name = 'waterbillingsystem';
 
+// Load local credentials override if present (ignored by .gitignore)
+if (file_exists(__DIR__ . '/config.local.php')) {
+    include __DIR__ . '/config.local.php';
+}
+
 try {
     // Attempt standard connection to the target database
     $dsn = "mysql:host={$db_host};port={$db_port};dbname={$db_name};charset=utf8mb4";
