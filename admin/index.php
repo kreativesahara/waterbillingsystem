@@ -84,15 +84,15 @@
 </form>
 <?php
 //Retrieving and Displaying content from the Database table.
-$sql = "SELECT * FROM monthly_bill ORDER BY timestamp DESC limit 1";
+$sql = "SELECT * FROM monthly_bill ORDER BY timestamp DESC, bill_id DESC limit 1";
 $stmtselect = $db->query($sql);
 
-if ($stmtselect->rowCount = 1) {
+if ($stmtselect && $stmtselect->rowCount() > 0) {
     while ($monthly_bill = $stmtselect->fetch(PDO::FETCH_ASSOC)) {
         echo '                                
-                    <div class="aside-grid">
+                    <div class="aside-grid" data-latest-house="' . htmlspecialchars($monthly_bill['house_number']) . '" data-latest-bill-id="' . htmlspecialchars($monthly_bill['bill_id']) . '">
                     <div class="aside" name="total_bill">
-                        <h4>Total Cost</h4>
+                        <h4>Total Cost (House ' . htmlspecialchars($monthly_bill['house_number']) . ')</h4>
                         <h1 id="total_bill">
                         ' . $monthly_bill['total_bill'] . '
                         </h1>
@@ -142,40 +142,119 @@ if ($stmtselect->rowCount = 1) {
 <!-- sweetalert2 library -->
 <script src="//cdn.jsdelivr.net/npm/sweetalert2@10"></script>
 <script type="text/javascript">
-    $(function() {
-        $('#send').click(function() {
-            const swalWithBootstrapButtons = Swal.mixin({
-                customClass: {
-                    confirmButton: 'btn btn-success',
-                    cancelButton: 'btn btn-danger'
-                },
-                buttonsStyling: false
-            })
+    function formatWhatsAppDigits(phone) {
+        var digits = (phone || '').replace(/\D+/g, '');
+        if (!digits) return '';
+        if (digits.indexOf('0') === 0 && digits.length === 10) {
+            return '254' + digits.substring(1);
+        }
+        if (digits.length === 9 && (digits.indexOf('7') === 0 || digits.indexOf('1') === 0)) {
+            return '254' + digits;
+        }
+        return digits;
+    }
 
-            swalWithBootstrapButtons.fire({
-                title: 'Send Bill',
-                text: "You won't be able to revert this!",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, send it!',
-                cancelButtonText: 'No, cancel!',
-                reverseButtons: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    swalWithBootstrapButtons.fire(
-                        'Successfully.',
-                        'bill sent'
-                    )
-                } else if (
-                    /* Read more about handling dismissals below */
-                    result.dismiss === Swal.DismissReason.cancel
-                ) {
-                    swalWithBootstrapButtons.fire(
-                        'Cancelled!',
-                        'bill terminated'
-                    )
+    $(function() {
+        $('#send').click(function(e) {
+            e.preventDefault();
+
+            var selectedHouse = $('#house_number').val() || $('.aside-grid').attr('data-latest-house') || '';
+            var billingMonth = $('#billing_month').val() || '';
+            var dateOfReading = $('#date_of_reading').val() || '';
+            var currentReading = $('#current_reading').val() || '';
+
+            $.ajax({
+                type: 'POST',
+                url: 'dispatch_bill.php',
+                dataType: 'json',
+                data: {
+                    house_number: selectedHouse,
+                    billing_month: billingMonth,
+                    date_of_reading: dateOfReading,
+                    current_reading: currentReading
+                },
+                success: function(res) {
+                    if (!res || res.status !== 'success') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Unable to Dispatch Bill',
+                            text: (res && res.message) ? res.message : 'Please populate a bill first before dispatching.'
+                        });
+                        return;
+                    }
+
+                    Swal.fire({
+                        title: 'Dispatch Bill via WhatsApp',
+                        html: `
+                            <div style="text-align:left; font-size:14px;">
+                                <p style="margin-bottom:8px;"><strong>Tenant:</strong> ${res.tenant_name} (House No. ${res.house_number})</p>
+                                <p style="margin-bottom:8px;"><strong>Billing Month:</strong> ${res.billing_month} &bull; <strong>Total Due:</strong> KSh ${res.total_bill}</p>
+                                <label style="font-weight:600; display:block; margin-top:10px; margin-bottom:4px;">Tenant WhatsApp Number:</label>
+                                <input type="text" id="swal_wa_phone" class="swal2-input" value="${res.tenant_phone || ''}" placeholder="e.g. 0798765432 or 254798765432" style="margin:0 0 12px 0; width:100%; height:40px; font-size:14px;">
+                                <label style="font-weight:600; display:block; margin-bottom:4px;">Message &amp; Redirect Link Preview:</label>
+                                <textarea id="swal_wa_message" class="swal2-textarea" rows="6" style="margin:0; width:100%; font-size:12px; font-family:monospace;">${res.message}</textarea>
+                            </div>
+                        `,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Send to WhatsApp',
+                        cancelButtonText: 'Cancel',
+                        reverseButtons: true,
+                        customClass: {
+                            confirmButton: 'btn btn-success ms-2',
+                            cancelButton: 'btn btn-danger'
+                        },
+                        buttonsStyling: false,
+                        preConfirm: function() {
+                            var phoneVal = $('#swal_wa_phone').val().trim();
+                            var msgVal = $('#swal_wa_message').val().trim();
+                            if (!phoneVal) {
+                                Swal.showValidationMessage('Please enter the tenant WhatsApp phone number');
+                                return false;
+                            }
+                            return {
+                                phone: formatWhatsAppDigits(phoneVal),
+                                rawPhone: phoneVal,
+                                message: msgVal
+                            };
+                        }
+                    }).then(function(result) {
+                        if (result.isConfirmed && result.value) {
+                            var waPhone = result.value.phone;
+                            var updatedMsg = result.value.message;
+                            var waUrl = 'https://wa.me/' + waPhone + '?text=' + encodeURIComponent(updatedMsg);
+
+                            // Open WhatsApp directly inside the synchronous user confirmation click
+                            window.open(waUrl, '_blank');
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'WhatsApp Dispatch Initiated',
+                                html: `
+                                    <p>Redirecting to WhatsApp for <strong>${res.tenant_name}</strong> (${result.value.rawPhone}).</p>
+                                    <p style="font-size:13px; margin-top:8px;">
+                                        <a href="${waUrl}" target="_blank" class="btn btn-sm btn-success">Open WhatsApp Again</a>
+                                    </p>
+                                `,
+                                confirmButtonText: 'Done'
+                            });
+                        } else if (result.dismiss === Swal.DismissReason.cancel) {
+                            Swal.fire(
+                                'Cancelled!',
+                                'Bill dispatch cancelled.',
+                                'info'
+                            );
+                        }
+                    });
+                },
+                error: function() {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Connection Error',
+                        text: 'Could not reach the server to prepare the WhatsApp dispatch.'
+                    });
                 }
-            })
+            });
         });
     });
 </script>
